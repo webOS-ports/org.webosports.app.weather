@@ -12,6 +12,9 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
+
+	Modified for LuneOS by WebOS Ports, 2026: the icon pack is a property
+	instead of a global; text arrives as escaped HTML from the app.
 */
 
 enyo.kind({
@@ -19,14 +22,14 @@ enyo.kind({
 	kind: "FittableColumns",
 	classes: "hour-box",
 	published: {
-		hour: "12:00",
+		hour: "",
 		icon: "na",
-		temp: "0&deg;",
-		forecast: "Unknown",
-		precip: "0%",
-		cloud: "100%"
+		forecast: "",
+		precip: "",
+		cloud: "",
+		pack: "optIconsColor"
 	},
-	components:[
+	components: [
 		{name: "icon", classes: "icon"},
 		{kind: "FittableRows", classes: "detail-box", fit: true, components: [
 			{name: "hour", classes: "hour", allowHtml: true},
@@ -39,13 +42,13 @@ enyo.kind({
 	],
 	rendered: function() {
 		this.inherited(arguments);
-
+		var base = "url('assets/icons/" + this.pack;
 		this.$.hour.setContent(this.hour);
-		this.$.icon.applyStyle("background-image", "url('assets/icons/" + appPrefs.icons + "/icon64/" + this.icon + ".png')");
-		this.$.forecast.setContent(this.temp + " " + this.forecast);
+		this.$.icon.applyStyle("background-image", base + "/icon64/" + this.icon + ".png')");
+		this.$.forecast.setContent(this.forecast);
 		this.$.precip.setContent(this.precip);
-		this.$.precip.applyStyle("background-image", "url('assets/icons/" + appPrefs.icons + "/icon24/rain.png')");
+		this.$.precip.applyStyle("background-image", base + "/icon24/rain.png')");
 		this.$.cloud.setContent(this.cloud);
-		this.$.cloud.applyStyle("background-image", "url('assets/icons/" + appPrefs.icons + "/icon24/cloudy.png')");
+		this.$.cloud.applyStyle("background-image", base + "/icon24/cloudy.png')");
 	}
 });

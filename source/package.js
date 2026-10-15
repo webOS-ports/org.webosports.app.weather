@@ -1,14 +1,18 @@
 enyo.depends(
 	"$lib/layout",
-	"$lib/onyx",	// To theme Onyx using Theme.less, change this line to $lib/onyx/source,
-	//"Theme.less",	// uncomment this line, and follow the steps described in Theme.less
+	"$lib/onyx",
 	"$lib/mochi",
-	"$lib/webappinstaller",
-	"config.js",
+	"$lib/webos-lib",
 	"App.css",
-	"App.js",
+	"Widget.css",
+	"WeatherData.js",
+	"Store.js",
+	"Net.js",
+	"DeviceLocation.js",
 	"CurrentlyElement.js",
 	"HourlyForecastRow.js",
 	"DailyForecastRow.js",
-	"TabIndicator.js"
+	"TabIndicator.js",
+	"App.js",
+	"Widget.js"
 );

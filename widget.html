@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Weather widget</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+		<link href="build/enyo.css" rel="stylesheet"/>
+		<link href="build/app.css" rel="stylesheet"/>
+		<script src="build/enyo.js" charset="utf-8"></script>
+		<script src="build/app.js" charset="utf-8"></script>
+	</head>
+	<body class="enyo-unselectable weather-widget-body">
+		<script type="text/javascript">
+			// No build yet (running from a source checkout): use the debug loader.
+			if (undefined === window.enyo) {
+				location = "widget-debug.html" + location.search;
+			} else {
+				enyo.ready(function () {
+					window.weatherWidget = new WeatherWidget().renderInto(document.body);
+				});
+			}
+		</script>
+	</body>
+</html>

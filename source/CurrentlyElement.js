@@ -12,6 +12,9 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
+
+	Modified for LuneOS by WebOS Ports, 2026: the icon pack is a property
+	instead of a global, and values are set as escaped HTML by the app.
 */
 
 enyo.kind({
@@ -20,20 +23,24 @@ enyo.kind({
 	classes: "currently-element left",
 	published: {
 		icon: "na",
-		desc: "0"
+		//* HTML; the app escapes what it puts in.
+		desc: "–",
+		pack: "optIconsColor"
 	},
-	components:[
+	components: [
 		{name: "icon", classes: "icon"},
 		{name: "desc", classes: "desc", allowHtml: true}
 	],
-	updateIcon: function() {
-		this.$.icon.applyStyle("background-image", "url('assets/icons/" + appPrefs.icons + "/icon24/" + this.icon + ".png')");
-	},
 	rendered: function() {
 		this.inherited(arguments);
-
-		this.$.icon.applyStyle("background-image", "url('assets/icons/" + appPrefs.icons + "/icon24/" + this.icon + ".png')");
-		this.$.desc.setContent(this.desc);
+		this.iconChanged();
+		this.descChanged();
+	},
+	iconChanged: function() {
+		this.$.icon.applyStyle("background-image", "url('assets/icons/" + this.pack + "/icon24/" + this.icon + ".png')");
+	},
+	packChanged: function() {
+		this.iconChanged();
 	},
 	descChanged: function() {
 		this.$.desc.setContent(this.desc);
@@ -46,20 +53,24 @@ enyo.kind({
 	classes: "currently-element right",
 	published: {
 		icon: "na",
-		desc: "0"
+		//* HTML; the app escapes what it puts in.
+		desc: "–",
+		pack: "optIconsColor"
 	},
-	components:[
+	components: [
 		{name: "desc", classes: "desc", allowHtml: true},
 		{name: "icon", classes: "icon"}
 	],
-	updateIcon: function() {
-		this.$.icon.applyStyle("background-image", "url('assets/icons/" + appPrefs.icons + "/icon24/" + this.icon + ".png')");
-	},
 	rendered: function() {
 		this.inherited(arguments);
-
-		this.$.icon.applyStyle("background-image", "url('assets/icons/" + appPrefs.icons + "/icon24/" + this.icon + ".png')");
-		this.$.desc.setContent(this.desc);
+		this.iconChanged();
+		this.descChanged();
+	},
+	iconChanged: function() {
+		this.$.icon.applyStyle("background-image", "url('assets/icons/" + this.pack + "/icon24/" + this.icon + ".png')");
+	},
+	packChanged: function() {
+		this.iconChanged();
 	},
 	descChanged: function() {
 		this.$.desc.setContent(this.desc);

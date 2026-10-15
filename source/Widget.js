@@ -12,172 +12,160 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
+
+	Modified for LuneOS by WebOS Ports, 2026: rewritten on WeatherData /
+	WeatherStore, shares the app's place and cached forecast instead of
+	locating and fetching on its own, optional hourly strip.
 */
 
-/*
-var appPrefs = {
-	units: "optAuto",
-	hours: "opt12hour",
-	icons: "optIconsColor",
-	theme: "optThemeDefault",
-	loc: "gps",
-	firstUse: true,
-	locs: [
-		{displayName: "Current Location", coords: "gps", active: true}
-	]
-};
-*/
+/**
+	The notification-area widget (a webOS dashboard window), opened by
+	WeatherApp.openWidget() with widget.html.
 
+	It shows the app's active place from the forecast the app cached in
+	localStorage, and redraws when the app stores a newer one (the storage
+	event fires in the other windows of the same origin). While shown it
+	refreshes a stale forecast itself, by coordinates only: it never starts
+	the GPS, which stays the app's job. Tap the icon to refresh, anywhere
+	else to bring the app forward.
+*/
 enyo.kind({
-	name: "DashWeatherPlusWidget",
-	kind: "FittableRows",
-	classes: "main",
-	fit: true,
-	components:[
-		{kind: "FittableColumns", classes: "header", components: [
-			{name: "iconMain", classes: "icon", ontap: "refreshData"},
-			{name: "currentTemp", classes: "temp", content: "00&deg;", allowHtml: true},
-			{kind: "FittableRows", fit: true, classes: "status-box", components: [
-				{name: "statusLine1", classes: "line1", content: "Dash Weather+", allowHtml: true},
-				{name: "statusLine2", classes: "line2", content: "Getting location...", allowHtml: true}
+	name: "WeatherWidget",
+	kind: "enyo.Control",
+	classes: "weather-widget",
+
+	//* Refetch a forecast older than this, in ms.
+	staleAfter: 30 * 60000,
+	//* How often to check, in ms.
+	checkEvery: 5 * 60000,
+
+	components: [
+		{name: "launcher", kind: "enyo.PalmService", service: "luna://com.palm.applicationManager/", method: "launch"},
+		{classes: "widget-row", ontap: "openApp", components: [
+			{name: "icon", classes: "widget-icon", ontap: "refreshTapped"},
+			{name: "temp", classes: "widget-temp", allowHtml: true, content: "--&deg;"},
+			{classes: "widget-status", components: [
+				{name: "place", classes: "widget-line1"},
+				{name: "status", classes: "widget-line2", allowHtml: true, content: $L("Open Weather to set a place")}
 			]}
-		]}
+		]},
+		{name: "hours", classes: "widget-hours", allowHtml: true, ontap: "openApp"}
 	],
+
 	create: function() {
 		this.inherited(arguments);
-		this.applyTheme(appPrefs.theme);
+		this.hourly = /[?&]size=hourly\b/.test(window.location.search);
+		this.addRemoveClass("with-hours", this.hourly);
+		this.$.hours.setShowing(this.hourly);
+		this.locale = navigator.language || "en-US";
+		this.onStorage = enyo.bind(this, "storageChanged");
+		window.addEventListener("storage", this.onStorage);
+		this.timer = setInterval(enyo.bind(this, "checkStale"), this.checkEvery);
 	},
+
 	rendered: function() {
 		this.inherited(arguments);
-		this.refreshData();
+		this.show();
+		this.checkStale();
 	},
-	openWeb: function() {
-		window.open("http://forecast.io");
-	},
-	applyTheme: function(theme) {
-		var head = document.getElementsByTagName("head")[0];
 
-		// Remove any other theme stylesheets
-		// console.log("Removing old theme sheets...");
-		var themeList = ["optThemeLight", "optThemeHoloDark"];
-		var appsheets = document.getElementsByTagName("link");
-		for (i=0; i < appsheets.length; i++) {
-			var sheet = appsheets[i];
-			for (a=0; a<themeList.length; a++) {
-				var findTheme = sheet.href.search(themeList[a]);
-				if (findTheme > -1) {
-					console.log("Removing theme: " + themeList[a]);
-					head.removeChild(sheet);
-				}
+	destroy: function() {
+		window.removeEventListener("storage", this.onStorage);
+		clearInterval(this.timer);
+		this.inherited(arguments);
+	},
+
+	storageChanged: function(inEvent) {
+		if (!inEvent.key || inEvent.key.indexOf(WeatherStore.key) === 0) {
+			this.show();
+		}
+	},
+
+	place: function() {
+		var prefs = WeatherStore.loadPrefs();
+		return {prefs: prefs, loc: prefs.locs[prefs.active] || prefs.locs[0]};
+	},
+
+	esc: function(inText) {
+		return enyo.dom.escape(inText === undefined || inText === null ? "" : String(inText));
+	},
+
+	//* Draws the cached forecast for the app's active place.
+	show: function() {
+		var p = this.place();
+		var cached = WeatherStore.getForecast(p.loc);
+		this.$.place.setContent(p.loc.name || (p.loc.gps ? $L("Current Location") : ""));
+		if (!cached || !cached.json) {
+			return;
+		}
+		var in24h = WeatherData.resolve24h(p.prefs.hours, p.prefs.systemTimeFormat, this.locale);
+		var m = WeatherData.model(cached.json, cached.units, in24h);
+		var c = m.current, today = m.days[0];
+		var icons = p.prefs.icons || "optIconsColor";
+		this.$.icon.applyStyle("background-image", "url('assets/icons/" + icons + "/icon64/" + c.icon + ".png')");
+		this.$.temp.setContent(c.temp === null ? "--&deg;" : this.esc(c.temp) + "&deg;");
+		var status = this.esc(c.text);
+		if (today && today.high !== null) {
+			status += " <span class='widget-hilo'>" + this.esc(today.high) + "&deg; / " + this.esc(today.low) + "&deg;</span>";
+		}
+		this.$.status.setContent(status);
+
+		if (this.hourly) {
+			var html = "";
+			// Skip the hour we are in; the row above already shows now.
+			var hours = m.hours.slice(1, 7);
+			for (var i = 0; i < hours.length; i++) {
+				var h = hours[i];
+				html += "<div class='widget-hour'><div class='widget-hour-time'>" + this.esc(h.hour.time) +
+					(h.hour.suffix ? "<span class='label-units'>" + this.esc(h.hour.suffix) + "</span>" : "") + "</div>" +
+					"<div class='widget-hour-icon' style=\"background-image: url('assets/icons/" + this.esc(icons) +
+					"/icon32/" + this.esc(h.icon) + ".png')\"></div>" +
+					"<div class='widget-hour-temp'>" + (h.temp === null ? "–" : this.esc(h.temp) + "&deg;") + "</div></div>";
 			}
-		}
-
-		if (theme != "optThemeDefault") {
-			// Add the new theme stylesheet
-			console.log("Adding new theme stylesheet: " + theme);
-			var e = document.createElement("link");
-			e.setAttribute("rel",	"stylesheet");
-			e.setAttribute("type",	"text/css");
-			e.setAttribute("href",	"assets/" + theme + ".css");
-
-			head.appendChild(e);
+			this.$.hours.setContent(html);
 		}
 	},
-	refreshData: function() {
-		this.getLocation();
-	},
-	getLocation: function() {
-		// console.log("Demo Mode: " + dwpDemoMode);
-		if (dwpDemoMode) {
-			var url = "assets/demo.json";
-			var request = new enyo.Ajax({
-					url: url
-				});
-			request.response(this, "gotWeatherData");
-			request.go();
+
+	checkStale: function() {
+		var p = this.place();
+		var cached = WeatherStore.getForecast(p.loc);
+		if (!cached || new Date().getTime() - cached.time > this.staleAfter) {
+			this.refresh();
 		}
-		else {
-			this.$.statusLine2.setContent("Requesting location...");
-			if (appPrefs.loc != "gps") {
-				var url = "http://maps.googleapis.com/maps/api/geocode/json?address=" + appPrefs.loc + "&sensor=true";
-				var request = new enyo.Ajax({url: url});
-				request.response(this, function(sender, response) {
-					// console.log(response);
-					if (response.status == "OK") {
-						var location = response.results[0].geometry.location.lat + "," + response.results[0].geometry.location.lng;
-						this.getWeatherData(location);
-					}
-					else {
-						this.$.statusLine2.setContent("Error: Location not found");
-					}
-				});
-				request.go();
+	},
+
+	refreshTapped: function() {
+		this.refresh();
+		// Refreshing is not a request to open the app.
+		return true;
+	},
+
+	refresh: function() {
+		var p = this.place();
+		var loc = p.loc;
+		if (loc.lat === null || loc.lat === undefined || this.loading) {
+			return;
+		}
+		var units = WeatherData.resolveUnits(p.prefs.units, loc.country);
+		this.loading = true;
+		this.$.icon.addClass("loading");
+		WeatherNet.getJson(WeatherData.forecastUrl(loc.lat, loc.lon, units), enyo.bind(this, function(inError, inJson) {
+			this.loading = false;
+			if (this.destroyed) {
+				return;
 			}
-			else {
-				navigator.geolocation.getCurrentPosition(enyo.bind(this, function(position) {
-					var location = position.coords.latitude + "," + position.coords.longitude;
-					// console.log("GPS location: " + location);
-					this.getWeatherData(location);
-				}));
+			this.$.icon.removeClass("loading");
+			if (!inError) {
+				WeatherStore.putForecast(loc, units, inJson);
+				this.show();
 			}
+		}));
+	},
+
+	//* Brings the app card forward (or starts it), as tapping any dashboard does.
+	openApp: function() {
+		if (window.PalmSystem) {
+			this.$.launcher.send({id: "org.webosports.app.weather", params: {}});
 		}
-	},
-	getWeatherData: function(location) {
-		this.$.statusLine2.setContent("Getting forecast...");
-
-		var myLoc = location || dwpDemoLoc;
-		var units;
-		switch (appPrefs.units) {
-			case "optImperial":
-				units = "us";
-				break;
-			case "optMetric":
-				units = "si";
-				break;
-			default:
-				units = "auto";
-				break;
-		};
-
-		var url = "https://api.forecast.io/forecast/"+dwpApiKey+"/"+myLoc+"?&units="+units;
-		var request = new enyo.JsonpRequest({
-			url: url
-		});
-		request.response(this, "gotWeatherData");
-		request.go();
-	},
-	gotWeatherData: function(sender, response) {
-		this.$.iconMain.applyStyle("background-image", "url('assets/icons/" + appPrefs.icons + "/icon64/" + response.currently.icon + ".png')");
-
-		var temp = parseInt(response.currently.temperature, 10) + "&deg;";
-		this.$.currentTemp.setContent(temp);
-
-		var location = response.latitude + "," + response.longitude;
-		this.getCityState(location);
-
-		this.$.statusLine2.setContent(response.currently.summary);
-	},
-	getCityState: function(location) {
-		var request = new enyo.Ajax({url: "http://maps.googleapis.com/maps/api/geocode/json?latlng="+ location + "&sensor=true"});
-		request.response(this, function(sender, response) {
-			this.gotCityState(response);
-		});
-		request.go();
-	},
-	gotCityState: function(response) {
-		var results = response.results[0].address_components;
-		// console.log(results);
-
-		var city = "";
-		var state = "";
-
-		for (i=0; i<results.length; i++) {
-			if (results[i].types[0] == "locality" || results[i].types[0] == "administrative_area_level_3")
-				city = results[i].short_name;
-			else if (results[i].types[0] == "administrative_area_level_1")
-				state = results[i].short_name;
-		}
-
-		this.$.statusLine1.setContent(city + ", " + state);
 	}
 });

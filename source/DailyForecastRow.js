@@ -12,6 +12,9 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
+
+	Modified for LuneOS by WebOS Ports, 2026: the icon pack is a property
+	instead of a global; text arrives as escaped HTML from the app.
 */
 
 enyo.kind({
@@ -19,17 +22,18 @@ enyo.kind({
 	kind: "FittableColumns",
 	classes: "day-box",
 	published: {
-		date: "Wednesday, March 27",
-		icon: "partly-cloudy-day",
-		high: "-42&deg;",
-		low: "100&deg;",
-		forecast: "slight chance of rain"
+		date: "",
+		icon: "na",
+		high: "",
+		low: "",
+		forecast: "",
+		pack: "optIconsColor"
 	},
-	components:[
+	components: [
 		{name: "icon", classes: "icon"},
 		{kind: "FittableRows", components: [
-			{name: "high", classes: "high", content: "112°", allowHtml: true},
-			{name: "low", classes: "low", content: "12°", allowHtml: true}
+			{name: "high", classes: "high", allowHtml: true},
+			{name: "low", classes: "low", allowHtml: true}
 		]},
 		{kind: "FittableRows", fit: true, components: [
 			{name: "date", classes: "date"},
@@ -38,8 +42,7 @@ enyo.kind({
 	],
 	rendered: function() {
 		this.inherited(arguments);
-
-		this.$.icon.applyStyle("background-image", "url('assets/icons/" + appPrefs.icons + "/icon64/" + this.icon + ".png')");
+		this.$.icon.applyStyle("background-image", "url('assets/icons/" + this.pack + "/icon64/" + this.icon + ".png')");
 		this.$.high.setContent(this.high);
 		this.$.low.setContent(this.low);
 		this.$.date.setContent(this.date);

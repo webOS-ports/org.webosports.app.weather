@@ -1,0 +1,119 @@
+/*
+	The notification-area widget (source/Widget.js). Everything is scoped to
+	the widget: this file is bundled into the same build/app.css as the app.
+	Backgrounds are Dash Weather+'s widget-bg images.
+*/
+html, body.weather-widget-body {
+	height: 100%;
+	margin: 0;
+	background: #000;
+	overflow: hidden;
+}
+
+.weather-widget {
+	height: 100%;
+	box-sizing: border-box;
+	padding: 0 10px;
+	background: #000 url("../assets/widget-bg-phone.png") center center;
+	background-size: cover;
+	color: #a5a5a5;
+	font-family: "Mochi Light", "Lato", sans-serif;
+	font-size: 15px;
+}
+
+.weather-widget.with-hours {
+	background-image: url("../assets/widget-bg.png");
+}
+
+.weather-widget .widget-row {
+	display: -webkit-flex;
+	display: flex;
+	-webkit-align-items: center;
+	align-items: center;
+	height: 52px;
+}
+
+.weather-widget .widget-icon {
+	-webkit-flex: none;
+	flex: none;
+	width: 42px;
+	height: 42px;
+	margin-right: 8px;
+	background: url("../assets/icons/optIconsColor/icon64/na.png") center center no-repeat;
+	background-size: contain;
+}
+
+.weather-widget .widget-icon.loading {
+	-webkit-animation: weather-pulse 1.2s ease-in-out infinite;
+	animation: weather-pulse 1.2s ease-in-out infinite;
+}
+
+.weather-widget .widget-temp {
+	-webkit-flex: none;
+	flex: none;
+	margin-right: 10px;
+	font-size: 32px;
+	color: #fff;
+}
+
+.weather-widget .widget-status {
+	-webkit-flex: 1 1 auto;
+	flex: 1 1 auto;
+	min-width: 0;
+	text-align: right;
+}
+
+.weather-widget .widget-line1,
+.weather-widget .widget-line2 {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.weather-widget .widget-line1 {
+	color: #fff;
+	margin-bottom: 2px;
+}
+
+.weather-widget .widget-hilo {
+	color: #ddd;
+	margin-left: 4px;
+}
+
+/* Laid out for a 120px dashboard: 52px row + 68px strip. */
+.weather-widget .widget-hours {
+	display: -webkit-flex;
+	display: flex;
+	-webkit-justify-content: space-between;
+	justify-content: space-between;
+	height: 64px;
+	padding-top: 3px;
+	border-top: 1px solid rgba(255,255,255,.15);
+	overflow: hidden;
+}
+
+.weather-widget .widget-hour {
+	-webkit-flex: 1 1 0;
+	flex: 1 1 0;
+	text-align: center;
+	font-size: 12px;
+	line-height: 15px;
+}
+
+.weather-widget .widget-hour-icon {
+	width: 26px;
+	height: 26px;
+	margin: 2px auto;
+	background-position: center center;
+	background-repeat: no-repeat;
+	background-size: contain;
+}
+
+.weather-widget .widget-hour-temp {
+	color: #fff;
+}
+
+.weather-widget .label-units {
+	font-size: 10px;
+	text-transform: uppercase;
+}

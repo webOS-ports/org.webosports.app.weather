@@ -346,3 +346,118 @@
 .day-box .date {
 	color: #fff;
 }
+/* --- LuneOS additions --- */
+
+/* The card is black, not white, below a short panel on tall screens. */
+html, body {
+	height: 100%;
+	background: #000;
+}
+
+.header .status-box .line3 {
+	margin-top: 3px;
+	font-size: 12px;
+	color: #888;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* The weather icon is the refresh button; it breathes while loading. */
+.header .icon.loading {
+	-webkit-animation: weather-pulse 1.2s ease-in-out infinite;
+	animation: weather-pulse 1.2s ease-in-out infinite;
+}
+
+@-webkit-keyframes weather-pulse {
+	50% { opacity: .35; }
+}
+
+@keyframes weather-pulse {
+	50% { opacity: .35; }
+}
+
+.system-warning {
+	font-size: 15px;
+}
+
+.day-divider {
+	margin-top: 18px;
+	padding-bottom: 4px;
+	border-bottom: 1px solid rgba(255,255,255,.35);
+}
+
+.location-detail {
+	font-size: 13px;
+	color: #888;
+}
+
+.location-row.active .location-detail {
+	color: #bbb;
+}
+
+.location-remove {
+	width: 36px;
+	font-size: 26px;
+	line-height: 28px;
+	text-align: center;
+	color: #888;
+}
+
+.search-result {
+	padding-left: 12px;
+}
+
+.search-status {
+	padding: 10px 0;
+	color: #bbb;
+}
+
+.credits {
+	margin-top: 20px;
+	font-size: 12px;
+	color: #888;
+	text-align: center;
+}
+
+.day-box .forecast {
+	font-size: 14px;
+}
+
+/* The header is laid out by the browser rather than FittableColumns: the
+   fittable status box came out 16px wider than the space left, and its
+   padding then pushed the place name off the right edge. */
+.header {
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: flex;
+	-webkit-align-items: flex-start;
+	align-items: flex-start;
+}
+.header > .icon,
+.header > .temp {
+	-webkit-flex: none;
+	flex: none;
+}
+.header > .status-box {
+	-webkit-flex: 1 1 auto;
+	flex: 1 1 auto;
+	min-width: 0;
+	width: auto !important;
+	position: static !important;
+}
+
+.search-decorator {
+	display: -webkit-flex;
+	display: flex;
+	-webkit-align-items: center;
+	align-items: center;
+	width: 100%;
+	box-sizing: border-box;
+}
+.search-decorator .search-input {
+	-webkit-flex: 1 1 auto;
+	flex: 1 1 auto;
+	min-width: 0;
+	width: auto;
+}
