@@ -189,6 +189,32 @@ async function newPage(inBase, inOptions) {
 		await sleep(50);
 	};
 
+	/**
+		A finger drag from one point to another in inSteps moves. With
+		inHold the finger stays down at the end (page.release() lifts it),
+		so a test can look at the page mid-drag.
+	*/
+	page.drag = async function(inFrom, inTo, inSteps, inHold) {
+		var steps = inSteps || 10;
+		await send("Input.dispatchMouseEvent", {type: "mouseMoved", x: inFrom.x, y: inFrom.y});
+		await send("Input.dispatchMouseEvent", {type: "mousePressed", x: inFrom.x, y: inFrom.y, button: "left", clickCount: 1});
+		for (var i = 1; i <= steps; i++) {
+			page.lastPointer = {x: inFrom.x + (inTo.x - inFrom.x) * i / steps, y: inFrom.y + (inTo.y - inFrom.y) * i / steps};
+			await send("Input.dispatchMouseEvent", {type: "mouseMoved", x: page.lastPointer.x, y: page.lastPointer.y,
+				button: "left", buttons: 1});
+			await sleep(16);
+		}
+		if (!inHold) {
+			await page.release();
+		}
+	};
+
+	page.release = async function() {
+		var p = page.lastPointer;
+		await send("Input.dispatchMouseEvent", {type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1});
+		await sleep(50);
+	};
+
 	page.type = async function(inText) {
 		await send("Input.insertText", {text: inText});
 	};

@@ -48,6 +48,8 @@ The pieces
     - `eval(expr)`: awaits promises
     - `waitFor(expr, ms)`: polls until truthy
     - `tap(selector)`: real mouse events, so enyo sees a tap
+    - `drag(from, to, steps, hold)` / `release()`: a finger drag; with `hold` the
+      finger stays down so a test can look mid-drag
     - `type(text)`, `key("Enter"|"Escape")`
     - `screenshot(file)`
     - `errors`

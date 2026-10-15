@@ -569,6 +569,80 @@ t.test("layout: tablet (1024x768)", function() {
 	return checkLayout({width: 1024, height: 768});
 });
 
+/**
+	A scroller whose content is narrower or wider than itself gets
+	horizontal room from ScrollMath and slides sideways under a diagonal
+	drag (Preware's package details did, from padding on the scroller).
+	Drag each tab's scroller diagonally and check its content never moves
+	sideways, during the drag or after.
+*/
+async function checkNoSidewaysScroll(inViewport) {
+	await open(scenario(), inViewport);
+	await settled();
+	var tabs = [[1, "currentlyContainer"], [2, "hourlyContainer"], [3, "dailyContainer"], [4, "menuContainer"]];
+	for (var i = 0; i < tabs.length; i++) {
+		await panel(tabs[i][0]);
+		var name = tabs[i][1];
+		var probe = "(function(){var s=weatherApp.$." + name + ";var c=s.$.strategy.$.client.hasNode();" +
+			"var m=new WebKitCSSMatrix(getComputedStyle(c).transform);" +
+			"return {x:Math.round(m.m41),y:Math.round(m.m42),left:s.getScrollLeft(),index:weatherApp.$.panels.getIndex()};})()";
+		var box = await page.eval("(function(){var r=weatherApp.$." + name + ".hasNode().getBoundingClientRect();" +
+			"return {x:r.left+r.width/2,y:r.top+r.height/2,h:r.height};})()");
+		// Mostly up with some sideways, as a thumb does; too little sideways
+		// to swipe the panels.
+		await page.drag({x: box.x, y: box.y + box.h / 4}, {x: box.x - 40, y: box.y - box.h / 4}, 12, true);
+		var during = await page.eval(probe);
+		await page.release();
+		await browserLib.sleep(600);
+		var after = await page.eval(probe);
+		console.log("     " + name + " during " + JSON.stringify(during) + " after " + JSON.stringify(after));
+		assert.strictEqual(during.index, tabs[i][0], name + ": the drag swiped to another panel");
+		assert.ok(during.x === 0 && during.left === 0, name + " slides sideways while dragging: " + JSON.stringify(during));
+		assert.ok(after.x === 0 && after.left === 0, name + " left sideways after the drag: " + JSON.stringify(after));
+	}
+}
+
+t.test("scrolling: tabs do not slide sideways under a diagonal drag (phone)", function() {
+	return checkNoSidewaysScroll({width: 480, height: 800});
+});
+
+t.test("scrolling: tabs do not slide sideways under a diagonal drag (tablet)", function() {
+	return checkNoSidewaysScroll({width: 1024, height: 768});
+});
+
+/**
+	Touching a list while a flick still coasts must stop it where it is.
+	Stock Enyo 2.5 TranslateScrollStrategy started the new drag from where
+	the coast began and the list jumped back (fixed in enyo/, as in
+	Preware and Memos).
+*/
+t.test("scrolling: touching a coasting list stops it in place, no snap-back", async function() {
+	await open(scenario());
+	await settled();
+	await panel(2);
+	// Where the list really is on screen: the first row's offset from the
+	// scroller's top, whatever mix of translate and scrollTop moved it.
+	var probe = "(function(){var s=weatherApp.$.hourlyContainer;var n=s.hasNode();" +
+		"var row=n.querySelector('.hour-box');" +
+		"return {shown:Math.round(n.getBoundingClientRect().top-row.getBoundingClientRect().top)," +
+		"coasting:s.$.strategy.isScrolling()};})()";
+	var box = await page.eval("(function(){var r=weatherApp.$.hourlyContainer.hasNode().getBoundingClientRect();" +
+		"return {x:r.left+r.width/2,y:r.top+r.height/2,h:r.height};})()");
+	// A quick flick up; while it still coasts, the finger goes down and
+	// drags the list back 40px. The coast runs on for a few ms between the
+	// probe and the touch, so the list may end a little further on, but it
+	// must not jump back to where the coast began.
+	await page.drag({x: box.x, y: box.y + box.h / 4}, {x: box.x, y: box.y - box.h / 4}, 4);
+	await browserLib.sleep(150);
+	var coast = await page.eval(probe);
+	assert.ok(coast.coasting, "the flick did not coast: " + JSON.stringify(coast));
+	await page.drag({x: box.x, y: box.y}, {x: box.x, y: box.y + 40}, 4, true);
+	var dragged = await page.eval(probe);
+	await page.release();
+	console.log("     coasting at " + coast.shown + "px; after dragging back 40px at " + dragged.shown + "px");
+	assert.ok(dragged.shown >= coast.shown - 60, "list jumped back from " + coast.shown + " to " + dragged.shown + "px");
+});
+
 // --- Run -----------------------------------------------------------------------
 
 (async function() {
