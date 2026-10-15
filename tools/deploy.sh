@@ -1,39 +1,12 @@
 #!/bin/bash
+# Builds and copies the app onto a device over adb, then has the launcher
+# pick it up.
+set -e
+cd "$(dirname "$0")/.."
+ID=$(node -p 'require("./appinfo.json").id')
+DEST=/usr/palm/applications/$ID
 
-# the folder this script is in (*/bootplate/tools)
-TOOLS=$(cd `dirname $0` && pwd)
-
-# enyo location
-ENYO="$TOOLS/../enyo"
-
-# deploy script location
-DEPLOY="$ENYO/tools/deploy.js"
-
-# check for node, but quietly
-if command -v node >/dev/null 2>&1; then
-	# use node to invoke deploy with imported parameters
-	echo "enyo/tools/minify.sh args: " $@
-	node "$DEPLOY" $@
-else
-	echo "No node found in path"
-	exit 1
-fi
-
-# copy files and package if deploying to cordova webos
-while [ "$1" != "" ]; do
-	case $1 in
-		-w | --cordova-webos )
-														# copy appinfo.json and cordova*.js files
-														SRC="$TOOLS/../"
-														DEST="$TOOLS/../deploy/"${PWD##*/}
-
-														cp "$SRC"appinfo.json $DEST -v
-														cp "$SRC"cordova*.js $DEST -v
-
-														# package it up
-														mkdir -p "$DEST/bin"
-														palm-package "$DEST/bin"
-														;;
-	esac
-	shift
-done
+tools/build-ipk.sh >/dev/null
+adb shell rm -rf "$DEST"
+adb push "deploy/$ID" "$DEST"
+adb shell luna-send -n 1 luna://com.palm.applicationManager/rescan {}
